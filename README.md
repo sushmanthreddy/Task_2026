@@ -4,9 +4,13 @@
 
 This repository contains my solutions for the [Google Summer of Code 2026](https://summerofcode.withgoogle.com/) evaluation tests for the **ML4SCI DeepLense** project. All tasks address challenges in strong gravitational lensing using deep learning, from multi-class classification to super-resolution and generative modeling.
 
-**Projects of Interest:**
-- [Neural Operators for Learning Lensing Maps](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
-- [Gravitational Lens Finding](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
+**Projects of Interest (in order of preference):**
+1. [Quantum Machine Learning for Strong Lensing](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
+2. [Neural Operators for Learning Lensing Maps](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
+3. [Image Super-Resolution for Strong Lensing](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
+4. [Physics-Guided Machine Learning for Strong Lensing](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
+5. [Gravitational Lens Finding](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
+6. [Diffusion Models for Strong Lensing](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
 
 ---
 
