@@ -1,6 +1,6 @@
 # GSoC 2026 - ML4SCI DeepLense: Evaluation Tests
 
-**Applicant:** Susmanth Reddy
+**Applicant:** SusHmanth Reddy
 
 This repository contains my solutions for the [Google Summer of Code 2026](https://summerofcode.withgoogle.com/) evaluation tests for the **ML4SCI DeepLense** project. All tasks address challenges in strong gravitational lensing using deep learning, from multi-class classification to super-resolution and generative modeling.
 
