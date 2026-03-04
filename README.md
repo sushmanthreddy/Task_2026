@@ -21,7 +21,7 @@ This repository contains my solutions for the [Google Summer of Code 2026](https
 | **Common Test I** | Multi-Class Classification | ESCNN + ResNet-18 | ROC-AUC | **0.9882** |
 | **Specific Test II** | Lens Finding | ESCNN + ResNet-18 | ROC-AUC | **0.9867** |
 | **Specific Test III** | Quantum ML | ResNet-18 + Quantum Circuit | ROC-AUC | **0.9837** |
-| **Specific Test IV** | Neural Operators | FNO-Enhanced ResNet | ROC-AUC | **0.9888** |
+| **Specific Test IV** | Neural Operators | U-Shaped FNO Classifier | ROC-AUC | **0.9977** |
 | **Specific Test V** | Physics-Guided ML | E2-Equivariant PINN (3-stream) | ROC-AUC | **0.9629** |
 | **Specific Test VI.A** | Super-Resolution (Simulated) | EDSR + LIIF | PSNR / SSIM | **41.79 dB / 0.9766** |
 | **Specific Test VI.B** | Super-Resolution (Real) | EDSR-EQ + LIIF-EQ | PSNR / SSIM | **34.81 dB / 0.8281** |
@@ -47,6 +47,8 @@ Task/
 │   └── README.md
 ├── Specific_Test_IV_Neural_Operators/               # Specific Test IV: Neural Operators
 │   ├── neural_operator_classifier.ipynb             #   FNO + FNO-Enhanced ResNet classifiers
+│   ├── u-shaped-fno_enhanced_resnet.ipynb           #   U-Shaped FNO-Enhanced ResNet (hybrid)
+│   ├── u-shaped_fno_classifier.ipynb                #   U-Shaped FNO Classifier (best, ROC-AUC 0.9977)
 │   ├── README.md
 │   └── checkpoints/
 ├── Specific_Test_IV_Diffusion_Models/               # Specific Test VIII: Diffusion Models
@@ -113,16 +115,18 @@ Hybrid quantum-classical classification using parameterized quantum circuits for
 
 ### Specific Test IV: Neural Operators
 
-Classification using Fourier Neural Operator (FNO) architectures that operate in function space via spectral convolutions (FFT). Compares pure FNO and hybrid FNO-Enhanced ResNet against the Common Test I baseline.
+Classification using spectral convolution architectures that operate in function space via FFT. Four models are compared -- from pure spectral classifiers to hybrid CNN+spectral designs -- with the U-shaped FNO classifier achieving the best results.
 
-**Approach:** Two models -- (1) direct FNO classifier using `SpectralConv` from the `neuraloperator` library, and (2) pretrained ResNet-18 augmented with parallel spectral convolution branches for global frequency-domain features.
+**Approach:** Progressive exploration of spectral convolution for lensing classification: (1) FNO classifier, (2) FNO-Enhanced ResNet hybrid, (3) U-shaped FNO-enhanced ResNet combining spectral convolution with U-Net-style encoder-decoder branches, and (4) pure U-shaped FNO classifier with multi-scale local + global frequency processing.
 
 | Model | ROC-AUC | Accuracy |
 |-------|---------|----------|
 | FNO Classifier | 0.9717 | 88.31% |
-| FNO-Enhanced ResNet | **0.9888** | 93.54% |
+| FNO-Enhanced ResNet | 0.9888 | 93.54% |
+| U-Shaped FNO-Enhanced ResNet | 0.9942 | 96.44% |
+| U-Shaped FNO Classifier | **0.9977** | **98.31%** |
 
-The FNO-Enhanced ResNet **surpasses the Common Test I baseline** (0.9888 vs 0.9882).
+The U-Shaped FNO Classifier **significantly surpasses the Common Test I baseline** (0.9977 vs 0.9882).
 
 [Full details →](Specific_Test_IV_Neural_Operators/README.md)
 
