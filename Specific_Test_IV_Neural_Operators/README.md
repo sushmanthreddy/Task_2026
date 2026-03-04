@@ -221,7 +221,35 @@ The UFNO Classifier **significantly outperforms the Common Test I baseline** (+0
 
 ### Relevance to the GSoC Project
 
-The GSoC project *"Neural Operators for Learning Lensing Maps"* proposes learning the functional mapping: **mass distribution -> lensed image**. The UFNO architecture demonstrated here -- combining spectral convolution with multi-scale spatial processing -- would form an excellent backbone for such operator learning. The strong classification results validate that this architecture can effectively capture the relevant physics of gravitational lensing.
+The GSoC project *["Neural Operators for Fast Simulation of Strong Gravitational Lensing"](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE3.html)* proposes learning the functional mapping: **mass distribution → lensed image**, replacing expensive Lenstronomy-based ray-tracing with a fast neural operator surrogate. The U-Shaped FNO architecture demonstrated here is directly suitable for this task:
+
+**Architecture Adaptability:** The U-Shaped FNO backbone requires minimal modification for image generation. The spectral convolution layers and U-Net encoder-decoder branches remain identical -- only the output head changes from global average pooling + classifier to a spatial projection layer that outputs a full 2D lensed image. The skip connections in the U-Net branch are particularly critical for generation, as they preserve the fine-scale spatial details (sharp arcs, thin Einstein rings) that pure spectral methods tend to blur due to Fourier mode truncation.
+
+**Why This Architecture Fits the Physics:**
+
+| Property | Why it matters for lensing simulation |
+|----------|--------------------------------------|
+| **Spectral convolution (FFT)** | The lens equation is a PDE -- spectral methods are the natural basis for approximating PDE solution operators. Lensing distortions manifest as structured patterns in Fourier space. |
+| **U-Net multi-scale branches** | Lensing involves structure at multiple scales simultaneously: large-scale Einstein ring geometry, intermediate-scale arc morphology, and fine-scale substructure perturbations. |
+| **Skip connections** | Preserve high-frequency image details that spectral layers would otherwise lose, which is essential for generating sharp, physically accurate lensed images. |
+| **Resolution invariance** | Spectral zero-padding allows a model trained at one resolution to infer at another -- critical for generalizing across different telescope pixel scales (HSC, Euclid, Rubin). |
+| **No pretrained backbone** | The model learns features directly from lensing physics rather than adapting generic ImageNet representations, which is necessary when the input domain (convergence maps) has no natural photographic analogue. |
+
+**Comparison with DeepONet:** The project also calls for comparison with DeepONet-style architectures. While DeepONet offers flexibility for irregular grids and point-queryable outputs, the U-Shaped FNO's grid-to-grid mapping is more natural and efficient for the fixed-resolution simulation setting. Both would be implemented and compared on the same training data generated from Lenstronomy.
+
+**Path from Classification to Generation:**
+
+```
+Classification (this work):
+   Lensed image → [Lift → Spectral+UNet blocks → AvgPool → MLP] → 3 class logits
+
+Generation (GSoC project):
+   Convergence map κ(x,y) → [Lift → Spectral+UNet blocks → Project] → Lensed image I(x,y)
+
+Same backbone. Different head. Different loss (MSE + SSIM + spectral loss).
+```
+
+The 0.9977 AUC classification result validates that this architecture can effectively capture the relevant physics of gravitational lensing -- the same spectral and multi-scale spatial representations that distinguish substructure classes are exactly what's needed to accurately predict lensed image morphology from mass distributions.
 
 ---
 
