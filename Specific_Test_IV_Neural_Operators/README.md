@@ -4,7 +4,7 @@
 
 This repository contains my solution for the **Specific Test IV: Neural Operators** task for the Google Summer of Code 2026 application with ML4SCI's DeepLense project.
 
-**Task:** Build a model for classifying gravitational lensing images into three classes using a neural operator architecture (FNO) as the backbone, replacing or augmenting standard convolutional feature extractors with spectral convolution layers that operate in function space.
+**Task:** Build a model for classifying gravitational lensing images into three classes using a neural operator architecture as the backbone, replacing or augmenting standard convolutional feature extractors with spectral convolution layers that operate in function space.
 
 **Project:** [Neural Operators for Learning Lensing Maps](https://ml4sci.org/gsoc/2026/proposal_DEEPLENSE5.html)
 
@@ -19,7 +19,7 @@ This repository contains my solution for the **Specific Test IV: Neural Operator
 - [Training Strategy](#training-strategy)
 - [Results](#results)
 - [Comparison with Common Test I](#comparison-with-common-test-i)
-- [Discussion: Neural Operators vs Standard CNNs](#discussion-neural-operators-vs-standard-cnns)
+- [Discussion](#discussion)
 - [Future Directions](#future-directions)
 - [Installation & Usage](#installation--usage)
 - [File Structure](#file-structure)
@@ -34,7 +34,7 @@ Classify strong gravitational lensing images into three categories:
 2. **Spherical Substructure** (`sphere`) -- Images with CDM subhalo substructure
 3. **Vortex Substructure** (`vort`) -- Images with vortex/axion substructure
 
-The classifier must use a **neural operator architecture** (e.g., Fourier Neural Operator) as the backbone, and performance is compared against the Common Test I baseline.
+The classifier must use a **neural operator architecture** as the backbone, and performance is compared against the Common Test I baseline.
 
 **Evaluation Metrics:** ROC Curve and AUC Score
 
@@ -57,24 +57,24 @@ The classifier must use a **neural operator architecture** (e.g., Fourier Neural
 
 Neural operators learn mappings between **function spaces** rather than finite-dimensional vectors. This is fundamentally aligned with gravitational lensing physics:
 
-1. **Physics Connection:** Gravitational lensing maps a continuous mass distribution to a continuous lensed image via the lens equation (a PDE). Neural operators were designed precisely to learn such PDE solution operators. The spectral convolution in FNO is conceptually aligned with how lensing distortions manifest in Fourier space.
+1. **Physics Connection:** Gravitational lensing maps a continuous mass distribution to a continuous lensed image via the lens equation (a PDE). Neural operators were designed precisely to learn such PDE solution operators. The spectral convolution is conceptually aligned with how lensing distortions manifest in Fourier space.
 
-2. **Global Receptive Field:** FNO processes the entire image in the frequency domain from layer 1. Unlike CNNs that build receptive fields gradually through stacking, neural operators capture global structures (lensing arcs, Einstein rings) immediately.
+2. **Global Receptive Field:** Spectral layers process the entire image in the frequency domain from layer 1. Unlike CNNs that build receptive fields gradually through stacking, neural operators capture global structures (lensing arcs, Einstein rings) immediately.
 
-3. **Resolution Invariance:** FNO can generalize across input resolutions by spectral zero-padding. A model trained at 150x150 can infer at higher resolution -- critical for real survey data from different telescopes (HSC-SSP, Euclid, Rubin).
+3. **Resolution Invariance:** Neural operators can generalize across input resolutions by spectral zero-padding. A model trained at 150x150 can infer at higher resolution -- critical for real survey data from different telescopes (HSC-SSP, Euclid, Rubin).
 
 4. **Spectral Sparsity:** Lensing images have structured frequency content. The spectral convolution naturally exploits this by operating only on the most informative frequency modes.
 
-5. **Novel for DeepLense:** This is the first exploration of neural operators within the ML4SCI DeepLense ecosystem.
-
 ### Strategy
 
-Two neural operator architectures are implemented and compared:
+Four neural operator architectures are implemented and compared, progressively increasing the use of spectral convolution:
 
-| Model | Approach | Neural Operator Component |
-|-------|----------|--------------------------|
-| **FNO Classifier** | Direct use of `neuraloperator` library | `SpectralConv` layers (FFT-based) |
-| **FNO-Enhanced ResNet** | Pretrained ResNet-18 + spectral branch | Custom `SpectralConvBlock` injection |
+| Model | Approach | Type |
+|-------|----------|------|
+| **FNO Classifier** | Direct spectral convolution classifier | Pure neural operator |
+| **FNO-Enhanced ResNet** | ResNet-18 + parallel spectral branch | Hybrid CNN + spectral |
+| **UFNO-Enhanced ResNet** | ResNet-18 + U-shaped spectral branch with skip connections | Hybrid CNN + U-shaped spectral |
+| **UFNO Classifier** | Pure U-shaped spectral convolution classifier | Pure neural operator |
 
 ---
 
@@ -82,70 +82,42 @@ Two neural operator architectures are implemented and compared:
 
 ### Model 1: FNO Classifier
 
-Direct adaptation of the Fourier Neural Operator for classification. Uses `SpectralConv` from the official `neuraloperator` library (v2.0.0).
+Direct adaptation of spectral convolution layers for classification. Uses `SpectralConv` from the official `neuraloperator` library (v2.0.0).
 
-```
-Input (1x150x150)
-       |
-  Lifting (Conv 1x1: 1 -> 64 channels, GELU)
-       |
-  4x FNO Layers (with residual connections):
-    ┌──────────────────────────────────────────┐
-    │  SpectralConv(64, 64, modes=32x32)       │
-    │  + Conv1x1(64, 64)  [local skip]         │
-    │  -> GELU -> BatchNorm -> + residual       │
-    └──────────────────────────────────────────┘
-       |
-  Projection (Conv 1x1: 64 -> 128, GELU)
-       |
-  Global Average Pooling
-       |
-  Dropout(0.3) -> Linear(128 -> 3)
-```
-
-Each `SpectralConv` layer:
-1. Applies `rfft2` to go to Fourier domain
-2. Multiplies by learned complex weight tensor (keeping lowest 32x32 modes)
-3. Applies `irfft2` to return to spatial domain
-4. Adds a local Conv1x1 skip connection + residual from input
-
-**Parameters:** ~8.9M
+- Lifting layer (1 -> 64 channels) followed by 4 spectral convolution layers (modes=32x32) with residual connections, projection to 128 channels, global average pooling, and a linear classifier.
+- Each spectral layer applies FFT, multiplies by learned complex weights in the frequency domain, applies inverse FFT, and adds a 1x1 convolution skip connection.
+- **Parameters:** ~8.9M
 
 ### Model 2: FNO-Enhanced ResNet (Hybrid)
 
-Pretrained ResNet-18 augmented with a parallel spectral convolution branch after layer1. This directly addresses the task requirement of *"replacing or augmenting the standard convolutional feature extractor with a neural operator layer."*
+Pretrained ResNet-18 augmented with a parallel spectral convolution branch after layer1.
 
-```
-Input (1x150x150)
-       |
-  ResNet Stem (conv1 + bn + relu + maxpool)
-       |
-  ResNet layer1 (64 channels)
-       |
-  ┌────────────────┴────────────────┐
-  |                                 |
-  | Spectral Branch:                | Spatial Branch:
-  | 2x [SpectralConvBlock(64ch,     | ResNet layer2 (128ch)
-  |      modes=16x16)               | ResNet layer3 (256ch)
-  |     + BatchNorm + GELU]         | ResNet layer4 (512ch)
-  | Projection (64->512 via         |
-  |  3x strided Conv2d)             |
-  |                                 |
-  └────────────────┬────────────────┘
-                   | (addition + adaptive pooling)
-             Global Average Pooling
-                   |
-             Dropout(0.3) -> Linear(512 -> 3)
-```
+- The spectral branch consists of 2 spectral convolution blocks (modes=16x16) with BatchNorm and GELU, projected to 512 channels via strided convolutions.
+- The spatial branch continues through ResNet layers 2-4 (512 channels).
+- Both branches are fused via addition before global average pooling and classification.
+- **Parameters:** ~13.9M
 
-Each `SpectralConvBlock`:
-1. Applies `rfft2` (ortho-normalized)
-2. Multiplies by learned complex weight tensor in frequency domain
-3. Applies `irfft2` back to spatial domain
+### Model 3: UFNO-Enhanced ResNet (Hybrid)
 
-The spectral branch provides **global frequency-domain features** that complement the **local spatial features** from the ResNet backbone. The model benefits from ImageNet pretraining on the spatial branch.
+ResNet-18 augmented with a U-shaped spectral branch that combines spectral convolution with a U-Net encoder-decoder for multi-scale local feature extraction.
 
-**Parameters:** ~13.9M
+- After ResNet layer1, features are lifted and processed by 4 spectral layers:
+  - Layers 0-1: spectral convolution + 1x1 convolution (global frequency features)
+  - Layers 2-3: spectral convolution + 1x1 convolution + U-Net branch (global + local multi-scale features)
+- The U-Net branch provides a 3-level encoder-decoder with skip connections, capturing local spatial structures at multiple scales that complement the global spectral features.
+- Projected to 512 channels and fused with ResNet spatial branch via addition.
+- **Parameters:** ~15.2M
+
+### Model 4: UFNO Classifier (Pure)
+
+Pure U-shaped spectral convolution classifier without any CNN backbone.
+
+- Lifting stem (strided convolutions to downsample 150x150 -> 38x38) followed by 6 spectral layers:
+  - Layers 0-1: spectral convolution + 1x1 convolution
+  - Layers 2-5: spectral convolution + 1x1 convolution + U-Net branch
+- Global average pooling followed by a 2-layer MLP classifier (width -> 128 -> 3).
+- Achieves the best performance among all models despite having no pretrained backbone.
+- **Parameters:** ~27.6M
 
 ---
 
@@ -153,18 +125,23 @@ The spectral branch provides **global frequency-domain features** that complemen
 
 ### Hyperparameters
 
-| Parameter | FNO Classifier | FNO-Enhanced ResNet |
-|-----------|---------------|---------------------|
-| Epochs | 150 | 150 |
-| Batch Size | 64 | 64 |
-| Learning Rate | 1e-4 | 1e-4 |
-| Optimizer | AdamW | AdamW |
-| Weight Decay | 0.01 | 0.05 |
-| Warmup Epochs | 10 | 10 |
-| Scheduler | Warmup + CosineAnnealing | Warmup + CosineAnnealing |
-| Early Stopping | Patience 30 (ROC-AUC) | Patience 30 (ROC-AUC) |
-| Label Smoothing | 0.1 | 0.1 |
-| Gradient Clipping | max_norm=1.0 | max_norm=1.0 |
+| Parameter | All Models |
+|-----------|-----------|
+| Epochs | 150 |
+| Batch Size | 64 |
+| Optimizer | AdamW |
+| Learning Rate | 5e-4 |
+| Weight Decay | 0.05 |
+| Warmup Epochs | 10 |
+| Scheduler | Warmup + CosineAnnealing |
+| Early Stopping | Patience 30 (ROC-AUC) |
+| Gradient Clipping | max_norm=1.0 |
+
+### Loss Function
+
+**FocalCrossEntropyLoss** -- a blend of smoothed cross-entropy and focal loss:
+- 70% CrossEntropyLoss (label_smoothing=0.1) for stable training
+- 30% Focal Loss (gamma=2.0) to focus on hard class-boundary samples where substructure differences are subtle
 
 ### Data Augmentation
 
@@ -184,109 +161,80 @@ The spectral branch provides **global frequency-domain features** that complemen
 
 ### Performance Comparison
 
-| Model | ROC-AUC (macro) | ROC-AUC (micro) | Accuracy | Parameters |
-|-------|----------------|----------------|----------|------------|
-| **FNO Classifier** | 0.9717 | 0.9738 | 88.31% | ~8.9M |
-| **FNO-Enhanced ResNet** | **0.9888** | **0.9899** | **93.54%** | ~13.9M |
-| Common Test I (ESCNN+ResNet) | 0.9882 | 0.9885 | 93.71% | ~11.5M |
-
-### Test Set Evaluation (Best Model: FNO-Enhanced ResNet)
-
-| Metric | Score |
-|--------|-------|
-| **Test ROC-AUC (macro)** | **0.9890** |
-| **Test Accuracy** | **93.60%** |
+| Model | ROC-AUC (macro) | Accuracy | Parameters |
+|-------|----------------|----------|------------|
+| FNO Classifier | 0.9717 | 88.31% | ~8.9M |
+| FNO-Enhanced ResNet | 0.9888 | 93.54% | ~13.9M |
+| UFNO-Enhanced ResNet | 0.9942 | 96.44% | ~15.2M |
+| **UFNO Classifier** | **0.9977** | **98.31%** | ~27.6M |
+| Common Test I (ESCNN+ResNet) | 0.9882 | 93.71% | ~11.5M |
 
 ### Key Findings
 
-- **FNO-Enhanced ResNet surpasses the Common Test I baseline** (AUC 0.9888 vs 0.9882), demonstrating that augmenting CNNs with spectral convolution layers improves classification performance on lensing images.
-- **Pure FNO Classifier** achieves AUC 0.9717 -- respectable for a from-scratch model without pretraining, but the lack of ImageNet initialization limits its performance compared to the hybrid approach.
-- The **spectral branch** in the hybrid model provides complementary global frequency-domain features that the spatial ResNet layers alone cannot capture, particularly for the ring/arc structures characteristic of gravitational lensing.
+- **UFNO Classifier achieves the best performance** (AUC 0.9977, accuracy 98.31%), surpassing all other models including the hybrid approaches and the Common Test I baseline by a significant margin.
+
+- **Progressive improvement with U-shaped architecture:** Adding the U-Net encoder-decoder branch to spectral layers consistently improves performance. The U-Net captures multi-scale local spatial features (edges, arcs, rings at different scales) that complement the global frequency features from spectral convolution.
+
+- **Pure spectral operator outperforms hybrid:** The UFNO Classifier without any pretrained CNN backbone achieves better results than all hybrid models, demonstrating that spectral convolution with multi-scale local processing is sufficient -- and superior -- for lensing image classification.
+
+- **All UFNO models surpass the baseline:** Both UFNO variants significantly outperform the Common Test I baseline (ESCNN+ResNet, AUC 0.9882).
 
 ### ROC Curves
 
-![ROC Comparison](checkpoints/comparison_roc.png)
+**UFNO-Enhanced ResNet:**
+
+![UFNO-Enhanced ResNet ROC](checkpoints/roc_test_UFNO_Enhanced_ResNet.png)
+
+**UFNO Classifier:**
+
+![UFNO Classifier ROC](checkpoints/roc_test_UFNO_Classifier.png)
 
 ---
 
 ## Comparison with Common Test I
 
-| Aspect | Common Test I | This Work (Neural Operators) |
-|--------|--------------|------------------------------|
-| **Architecture** | ESCNN Canonicalization + ResNet-18 | FNO / FNO-Enhanced ResNet |
-| **Best AUC** | 0.9882 | **0.9888** |
-| **Feature Domain** | Spatial (pixel convolutions) | Spatial + Spectral (Fourier coefficients) |
-| **Receptive Field** | Local -> global (stacked layers) | Global from layer 1 (full FFT) |
+| Aspect | Common Test I | This Work (Best: UFNO Classifier) |
+|--------|--------------|-----------------------------------|
+| **Architecture** | ESCNN Canonicalization + ResNet-18 | U-shaped spectral convolution classifier |
+| **Best AUC** | 0.9882 | **0.9977** |
+| **Best Accuracy** | 93.71% | **98.31%** |
+| **Feature Domain** | Spatial (pixel convolutions) | Spectral + multi-scale spatial |
+| **Receptive Field** | Local -> global (stacked layers) | Global from layer 1 (full FFT) + multi-scale local (U-Net) |
 | **Resolution** | Fixed 150x150 | Resolution-invariant (spectral zero-padding) |
-| **Physics Prior** | Rotation equivariance (E(2) symmetry) | Spectral sparsity + global structure |
-| **Pretraining** | ImageNet (ResNet backbone) | ImageNet (hybrid) / From scratch (FNO) |
+| **Physics Prior** | Rotation equivariance (E(2) symmetry) | Spectral sparsity + multi-scale structure |
+| **Pretraining** | ImageNet (ResNet backbone) | From scratch |
 
-The FNO-Enhanced ResNet slightly outperforms the Common Test I baseline, showing that **spectral convolution layers provide meaningful complementary features** for lensing classification. The pure FNO model, while not matching the pretrained baseline, demonstrates that neural operators can learn useful representations from scratch on this dataset.
+The UFNO Classifier **significantly outperforms the Common Test I baseline** (+0.95% AUC, +4.6% accuracy), demonstrating that U-shaped spectral convolution with multi-scale local processing provides superior representations for lensing classification without requiring pretrained weights or explicit symmetry encoding.
 
 ---
 
-## Discussion: Neural Operators vs Standard CNNs
+## Discussion
 
-### How Neural Operators Differ
+### Why the U-shaped Spectral Architecture Works Best
 
-| Property | Standard CNN | FNO (Neural Operator) |
-|----------|-------------|----------------------|
-| **Domain** | Spatial (pixel convolutions) | Spectral (Fourier coefficients) |
-| **Receptive field** | Local -> global (stacked layers) | Global from layer 1 (full FFT) |
-| **Resolution** | Fixed input size | Resolution-invariant (spectral zero-padding) |
-| **Complexity** | O(N) per layer | O(N log N) per layer (FFT) |
-| **Inductive bias** | Translation equivariance | Spectral sparsity + global structure |
+1. **Global + Local features:** Spectral convolution captures global frequency patterns (ring structures, arc symmetries) while the U-Net branch captures local multi-scale spatial features (edges, textures, fine substructure details).
 
-### Why the Hybrid Approach Works Best
+2. **Skip connections preserve detail:** The U-Net encoder-decoder with skip connections preserves fine-grained spatial information that would be lost in pure frequency-domain processing.
 
-The FNO-Enhanced ResNet outperforms both the pure FNO and the pure CNN baselines because:
+3. **Progressive complexity:** The architecture processes features through pure spectral layers first (learning global patterns) before introducing the U-Net branch (adding local detail), allowing the model to build representations hierarchically.
 
-1. **Complementary features:** ResNet captures local texture and edge features; the spectral branch captures global frequency patterns (ring structures, arc symmetries).
-2. **Pretrained initialization:** The ResNet backbone starts from ImageNet weights, providing a strong feature extraction foundation that the spectral branch enhances.
-3. **Parallel fusion:** The additive fusion after layer1 allows the model to learn an optimal blend of spatial and spectral representations.
+4. **No pretrained bias:** Training from scratch allows the model to learn features specifically optimized for lensing images, rather than adapting ImageNet features that may not transfer well to astronomical data.
 
 ### Relevance to the GSoC Project
 
-The GSoC project *"Neural Operators for Learning Lensing Maps"* proposes learning the functional mapping: **mass distribution -> lensed image**. While this test focuses on classification (a simpler downstream task), the same spectral convolution layers demonstrated here would form the core of a full neural operator surrogate simulator. The results validate that neural operators can effectively process lensing images, supporting the feasibility of the more ambitious operator learning task.
+The GSoC project *"Neural Operators for Learning Lensing Maps"* proposes learning the functional mapping: **mass distribution -> lensed image**. The UFNO architecture demonstrated here -- combining spectral convolution with multi-scale spatial processing -- would form an excellent backbone for such operator learning. The strong classification results validate that this architecture can effectively capture the relevant physics of gravitational lensing.
 
 ---
 
 ## Future Directions
 
-### 1. Equivariant Neural Operators
+1. **Equivariant UFNO:** Combine E(2)-equivariant canonicalization with the UFNO architecture to encode rotational symmetry directly.
 
-Gravitational lensing images are rotationally symmetric -- rotating a lens image does not change its substructure class. Standard FNO is translation-equivariant (via FFT) but **not** rotation-equivariant. Combining equivariant architectures with neural operators is a promising direction:
+2. **Full Operator Learning:** Extend from classification to learning the lens equation mapping (mass distribution -> lensed image) using the UFNO as the operator backbone.
 
-- **ESCNN Canonicalization + FNO Backbone:** Use the E(2)-equivariant canonicalizer from Common Test I to normalize image orientation, then feed into an FNO classifier. This separates geometric symmetry handling from spectral feature extraction.
-- **E(2)-Equivariant Lifting + FNO + Invariant Pooling:** Use `escnn` steerable convolutions for the lifting/projection layers (handling group structure) with FNO layers in between for spectral processing. Group pooling at the end ensures rotation invariance.
-- **Steerable Spectral Convolutions:** Replace standard `SpectralConv` with group-equivariant spectral convolutions that respect rotation symmetry directly in Fourier space. This is theoretically elegant but requires custom implementation beyond what `neuraloperator` currently supports.
+3. **Resolution Transfer:** Train at 150x150, evaluate at higher resolutions to demonstrate spectral zero-padding resolution invariance.
 
-### 2. Backbone Exploration
-
-The modular FNO-Enhanced design allows systematic backbone swapping:
-
-| Backbone | Expected Benefit |
-|----------|-----------------|
-| **EfficientNet-B0/B2** | Better accuracy-efficiency tradeoff |
-| **ConvNeXt-Tiny** | Modern CNN with larger effective receptive field |
-| **Swin Transformer** | Hierarchical attention + spectral branch |
-| **ResNet-50** | Deeper spatial features for spectral fusion |
-| **MobileNetV3** | Lightweight deployment with spectral augmentation |
-
-### 3. Full Operator Learning
-
-Extend from classification to learning the lens equation mapping (**mass distribution -> lensed image**) using:
-- **FNO** for the forward mapping (mass -> image)
-- **DeepONet** for the inverse mapping (image -> mass parameters)
-- **Physics-Informed Neural Operators (PINO):** Incorporate the lens equation as a soft constraint during training
-
-### 4. Resolution Transfer
-
-Train at 150x150, evaluate at higher resolutions (300x300, 600x600) to demonstrate the resolution invariance property of FNO -- critical for real survey data from different telescopes with varying pixel scales.
-
-### 5. Uncertainty Quantification
-
-Use neural operator ensembles or probabilistic variants (e.g., Bayesian FNO) for uncertainty estimation in lens classification, enabling more reliable automated lens detection in large survey pipelines.
+4. **Uncertainty Quantification:** Use neural operator ensembles or Bayesian variants for uncertainty estimation in lens classification.
 
 ---
 
@@ -294,49 +242,4 @@ Use neural operator ensembles or probabilistic variants (e.g., Bayesian FNO) for
 
 ### Requirements
 
-```bash
-pip install torch torchvision timm neuraloperator scikit-learn matplotlib numpy tqdm
-```
-
-### Running the Notebook
-
-1. Download the dataset from [Google Drive](https://drive.google.com/file/d/1QUVUpknFKMKLKvzWz-BWBOnL1Mf8b5tv/view)
-2. Extract to `~/work/dataset/` directory
-3. Run `neural_operator_classifier.ipynb`
-
----
-
-## File Structure
-
-```
-Specific_Test_IV_Neural_Operators/
-  README.md                            # This file
-  neural_operator_classifier.ipynb     # Main notebook with full implementation
-  checkpoints/
-    best_FNO_Classifier.pth            # Trained FNO model weights
-    best_FNO_Enhanced_ResNet.pth       # Trained hybrid model weights
-    roc_FNO_Classifier.png             # FNO ROC curve
-    roc_FNO_Enhanced_ResNet.png        # Hybrid ROC curve
-    roc_test_best.png                  # Test set ROC curve (best model)
-    comparison_roc.png                 # Side-by-side comparison
-```
-
----
-
-## References
-
-1. **FNO:** Li, Z. et al. "Fourier Neural Operator for Parametric Partial Differential Equations." ICLR 2021.
-2. **AFNO:** Guibas, J. et al. "Adaptive Fourier Neural Operators: Efficient Token Mixers for Transformers." ICLR 2022.
-3. **neuraloperator:** Kossaifi, J. et al. "A Library for Learning Neural Operators." arXiv:2412.10354, 2025.
-4. **FNO for Classification:** Kabri, S. et al. "Resolution-Invariant Image Classification based on Fourier Neural Operators." DAGM GCPR 2022.
-5. **ESCNN:** Weiler, M. & Cesa, G. "General E(2)-Equivariant Steerable CNNs." NeurIPS 2019.
-6. **DeepLense:** [ML4SCI DeepLense Project](https://github.com/ML4SCI/DeepLense)
-
----
-
-## Author
-
-**Susmanth Reddy**
-GSoC 2026 Applicant -- ML4SCI DeepLense
-
----
+pip install torch torchvision timm scikit-learn matplotlib numpy tqdm
