@@ -228,13 +228,31 @@ The GSoC project *"Neural Operators for Learning Lensing Maps"* proposes learnin
 
 ## Future Directions
 
-1. **Equivariant UFNO:** Combine E(2)-equivariant canonicalization with the UFNO architecture to encode rotational symmetry directly.
+Several advanced neural operator architectures have been explored and implemented as extensions to this work, each addressing a different limitation of the current approach:
 
-2. **Full Operator Learning:** Extend from classification to learning the lens equation mapping (mass distribution -> lensed image) using the UFNO as the operator backbone.
+### 1. Equivariant Neural Operators
 
-3. **Resolution Transfer:** Train at 150x150, evaluate at higher resolutions to demonstrate spectral zero-padding resolution invariance.
+Gravitational lensing images are rotationally symmetric -- rotating a lens image does not change its substructure class. The current U-Shaped FNO is translation-equivariant (via FFT) but not rotation-equivariant. An E(2)-equivariant canonicalization network (ESCNN with C8 symmetry) can be placed before the U-Shaped FNO backbone to first normalize image orientation, then classify. This two-stage approach separates geometric symmetry handling from spectral feature extraction, combining the best of both. A further step would be to design spectral convolution layers that are themselves group-equivariant in the frequency domain (G-FNO), where rotation in the spatial domain corresponds to phase shifts in Fourier space, and the learned weight tensors are constrained to respect these symmetries directly.
 
-4. **Uncertainty Quantification:** Use neural operator ensembles or Bayesian variants for uncertainty estimation in lens classification.
+### 2. Adaptive Fourier Neural Operator  Token Mixing
+
+The Adaptive Fourier Neural Operator replaces standard self-attention in vision transformers with Fourier-domain token mixing. Instead of computing pairwise attention scores, it processes all spatial tokens globally via FFT, applies block-diagonal complex linear layers with learnable soft-thresholding (sparsification), and returns to the spatial domain via inverse FFT. The block-diagonal structure reduces parameter count while maintaining global receptive field, and the soft-thresholding acts as a learnable frequency filter that keeps only the most informative spectral modes. For gravitational lensing, this is particularly well-suited because lensing arcs and Einstein rings have structured frequency signatures that the AFNO can selectively retain. The architecture is also fully resolution-invariant -- a model trained at 150x150 can infer at arbitrary resolutions without retraining, which is critical for deployment across different telescope surveys (HSC-SSP at one pixel scale, Euclid at another, Rubin/LSST at a third).
+
+### 3. Multiscale Adaptive Neural Operators with Cross-Attention
+
+Gravitational lensing involves structure at multiple spatial scales simultaneously: the large-scale mass distribution of the lens galaxy, the intermediate-scale Einstein ring geometry, and the fine-scale substructure signatures (subhalos, vortices) that distinguish the three classes. A multiscale neural operator architecture addresses this by running two parallel operator branches at different resolutions -- a global operator on a coarser grid captures the large-scale mass distribution context, while a local operator on a finer grid resolves the detailed substructure features. Cross-attention layers allow the local operator to condition on global context at each layer, so fine-scale predictions are informed by the overall lensing geometry. The global operator is trained first and frozen, then the local operator is trained with input noise for robustness. This hierarchical approach with dynamic spectral mode allocation is well-aligned with the physics of lensing, where substructure detection requires understanding both the smooth lens potential and its local perturbations.
+
+### 4. Parallel All-Component Spectral Operator for Resolution Robustness
+
+Real gravitational lensing data comes from telescopes with widely varying pixel scales and image quality -- survey instruments like HSC-SSP, space telescopes like HST/JWST, and future missions like Euclid all produce images at different native resolutions. A parallel-structured spectral operator addresses this by processing all frequency components through multiple parallel branches, each handling different parts of the spectrum. The operator uses resolution-adaptive spectral convolution that can map from any input resolution to a fixed output resolution via flexible inverse FFT sizing, acting as a learned frequency-domain preprocessor before a classification backbone. The model is trained in two phases: first at a base resolution to learn core spectral features, then fine-tuned across multiple resolutions (e.g., 64x64, 128x128, 256x256) to build resolution-invariant representations. This makes it possible to train a single lens classifier that works reliably across data from different surveys without resolution-specific retraining.
+
+### 5. Full Operator Learning
+
+Beyond classification, the ultimate goal for the GSoC project *"Neural Operators for Learning Lensing Maps"* is to learn the functional mapping: **mass distribution -> lensed image**. The U-Shaped FNO architecture demonstrated here -- combining spectral convolution with multi-scale spatial processing via encoder-decoder branches -- would form a strong backbone for this operator learning task. The spectral layers would capture the global lens equation physics while the U-Net branches would resolve the fine-scale image details.
+
+### 6. Uncertainty Quantification
+
+For deployment in real survey pipelines where classification confidence matters, neural operator ensembles or Bayesian variants (e.g., MC Dropout over the spectral layers, deep ensembles of U-Shaped FNO classifiers) can provide calibrated uncertainty estimates. This is essential for identifying ambiguous cases where human expert review is needed, and for propagating classification uncertainty into downstream cosmological analyses.
 
 ---
 
