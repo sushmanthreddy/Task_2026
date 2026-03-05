@@ -4,14 +4,15 @@ GSoC 2026 - ML4SCI DeepLense
 
 | Model | Test Acc | ROC-AUC |
 |-------|----------|---------|
-| ResNet-18 + Quantum Circuit | 92.40% | **0.9837** |
-| E2-Equivariant CNN + Quantum Circuit | **94.93%** | 0.9812 |
+| ResNet-18 + Quantum Circuit | 92.40% | 0.9837 |
+| E2-Equivariant CNN + Quantum Circuit | 94.93% | 0.9812 |
+| E2-Equivariant CNN + p4m Equivariant QCNN | **96.93%** | **0.9966** |
 
 ---
 
 ## What this is
 
-Three-class classification of strong gravitational lensing images - no substructure, spherical substructure (CDM subhalos), and vortex substructure (axion dark matter). We built two hybrid quantum-classical models that pair different classical backbones with the same parameterized quantum circuit.
+Three-class classification of strong gravitational lensing images - no substructure, spherical substructure (CDM subhalos), and vortex substructure (axion dark matter). We built three hybrid quantum-classical models that pair different classical backbones with parameterized quantum circuits.
 
 **Dataset:** 30,000 training images, 150×150 single-channel `.npy` files, three balanced classes (`no`, `sphere`, `vort`).
 
@@ -23,9 +24,9 @@ We went with TorchQuantum instead of PennyLane because backpropagation through q
 
 ---
 
-## The two models
+## The three models
 
-Both models follow the same pattern: classical backbone extracts features → MLP compresses them down to 8 values → quantum circuit processes them → MLP maps to 3 class logits. The quantum circuit is identical in both - only the backbone changes.
+Models A and B follow the same pattern: classical backbone extracts features → MLP compresses them down to 8 values → quantum circuit processes them → MLP maps to 3 class logits. The quantum circuit is identical in both - only the backbone changes. Model C takes a different approach: it replaces the variational quantum circuit with a p4m equivariant QCNN that preserves symmetry at the quantum level too.
 
 ### Model A: ResNet-18 + Quantum Circuit
 
@@ -89,9 +90,50 @@ Input (1×128×128)
   softmax → P(no), P(sphere), P(vort)
 ```
 
+### Model C: E2-Equivariant CNN + p4m Equivariant QCNN
+
+`equiv_qnn.ipynb`
+
+Takes the equivariant idea to its logical conclusion: equivariance at *both* the classical and quantum levels. The classical backbone is the same C4 steerable CNN from Model B, but the quantum circuit is replaced with a p4m equivariant QCNN adapted from the EQNN_for_HEP project (Lazaro Diaz Lievano, QMLHEP/ML4SCI). Instead of a generic variational circuit, this uses equivariant U2 gates (RX + IsingZZ + RX + IsingYY) and equivariant pooling (RX + RY + RZ + CRX) that respect p4m symmetry. The QCNN structure progressively reduces 8 qubits to 1 through three conv-pool stages, mirroring classical CNN downsampling. Only 33 trainable quantum parameters.
+
+```
+Input (1×150×150)
+       │
+  C4 Steerable CNN (e2cnn, 6 equivariant blocks)
+  ├─ R2Conv(1→24, k=7) + BN + ReLU
+  ├─ R2Conv(24→48, k=5) + BN + ReLU + AvgPool
+  ├─ R2Conv(48→48, k=5) + BN + ReLU
+  ├─ R2Conv(48→96, k=5) + BN + ReLU + AvgPool
+  ├─ R2Conv(96→96, k=5) + BN + ReLU
+  ├─ R2Conv(96→64, k=5) + BN + ReLU + AvgPool
+  └─ GroupPooling → rotation-invariant
+       │  → 61,504-dim
+       ▼
+  Bridge: 61504 → 128 → 64 → 8  (BN + ReLU + Dropout each)
+       │  → tanh(x) × π/2
+       ▼
+  ┌─ p4m Equivariant QCNN (8 qubits, 33 params)   ─┐
+  │  RY angle encoding                              │
+  │  Conv1: 8 equivariant U2 gates (weight-shared)  │
+  │  Pool1: 8→4 qubits (equivariant pooling)        │
+  │  Conv2: 2 equivariant U2 gates                  │
+  │  Pool2: 4→2 qubits                              │
+  │  Conv3: 1 equivariant U2 gate                   │
+  │  Pool3: 2→1 qubit → H gate                      │
+  │  PauliZ measurement on all 8 wires              │
+  └─────────────────────────────────────────────────┘
+       │  → 8 values
+       ▼
+  Post-net: 8 → 32 → 3
+       │
+  softmax → P(no), P(sphere), P(vort)
+```
+
 ---
 
-## Quantum circuit
+## Quantum circuits
+
+### Models A & B: Variational circuit
 
 8 qubits, 6 variational layers. Hadamard gates create superposition, then RY gates encode the 8 input features as rotation angles.
 
@@ -107,6 +149,14 @@ Each variational layer does:
 All three rotation axes (RY+RZ+RX) give full Bloch sphere access. The mixed entanglement pattern - forward, reverse, skip, circular - creates rich correlations without excessive depth. PauliZ measurement on all qubits gives 8 expectation values that go to the post-net.
 
 8 qubits and 6 layers keep the circuit NISQ-compatible - this would run on current IBM/Google hardware.
+
+### Model C: p4m Equivariant QCNN
+
+A fundamentally different quantum circuit design. Instead of generic variational layers, it uses gates that respect the p4m symmetry group - the same dihedral symmetry that governs the gravitational lensing images. The circuit has a hierarchical conv-pool structure that mirrors classical CNNs:
+
+Each equivariant convolution layer applies a U2 gate: RX rotations on both qubits, an IsingZZ entangling gate, more RX rotations, and an IsingYY entangling gate. These 6 parameters per gate are weight-shared across all qubit pairs in a layer, just like a convolutional kernel. Equivariant pooling uses RX + RY + RZ rotations plus a controlled-RX to merge information from one qubit into another (5 params per pool).
+
+Three conv-pool stages reduce 8 qubits → 4 → 2 → 1, with a final Hadamard on the output qubit. Total: 33 trainable quantum parameters (18 conv + 15 pool), compared to 144 in the variational circuit. Despite having far fewer quantum parameters, the equivariant structure is more parameter-efficient because every parameter respects the problem's symmetry.
 
 ---
 
@@ -132,7 +182,17 @@ All three rotation axes (RY+RZ+RX) give full Bloch sphere access. The mixed enta
 
 **Test accuracy: 94.93% · ROC-AUC: 0.9812 · 42 epochs, ~107 min**
 
-Both models hit 0.98+ ROC-AUC. Sphere is the hardest class in both (subhalo perturbations are subtle). The equivariant model converges faster and reaches higher accuracy without pretrained weights - the rotation symmetry prior does real work here.
+### Model C - E2-Equivariant CNN + p4m Equivariant QCNN
+
+| Class | Precision | Recall | F1 | AUC |
+|-------|-----------|--------|-----|-----|
+| no | 0.942 | 1.000 | 0.970 | 0.996 |
+| sphere | 0.987 | 0.929 | 0.957 | 0.995 |
+| vort | 0.980 | 0.980 | 0.980 | 0.999 |
+
+**Test accuracy: 96.93% · ROC-AUC: 0.9966 · 50 epochs (early stopping at best), ~149 min**
+
+Model C is the clear winner across the board. Making the quantum circuit itself equivariant - not just the classical backbone - pushes test accuracy from 94.93% to 96.93% and ROC-AUC from 0.9812 to 0.9966. The p4m QCNN uses only 33 trainable quantum parameters versus 144 in the variational circuit, yet achieves better results because every quantum parameter respects the problem's symmetry. Sphere remains the hardest class, but Model C's sphere precision (0.987) is substantially higher than Models A and B, meaning fewer false sphere predictions. The "no" class hits perfect recall (1.000).
 
 ---
 
@@ -140,9 +200,11 @@ Both models hit 0.98+ ROC-AUC. Sphere is the hardest class in both (subhalo pert
 
 The dressed quantum circuit approach - classical backbone doing feature extraction, quantum circuit doing classification - is the most practical way to apply quantum computing to real image data right now. Raw images are way too high-dimensional for current quantum hardware (150×150 = 22,500 pixels vs 8 qubits), so you need a classical front-end to compress the information first. The question is what that front-end should be.
 
-We explored two answers. Model A uses transfer learning (ResNet-18 pretrained on ImageNet) - this is the standard approach in hybrid QML and gives you strong features immediately. Model B takes a different angle: since gravitational lensing is rotationally symmetric, we use an equivariant CNN that has this symmetry baked into its architecture. The network doesn't need to waste capacity learning that a rotated lens is still a lens - it knows that structurally. This turned out to work better (94.93% vs 92.40%) and train faster (42 vs 80 epochs), even without pretrained weights.
+We explored three answers. Model A uses transfer learning (ResNet-18 pretrained on ImageNet) - this is the standard approach in hybrid QML and gives you strong features immediately. Model B takes a different angle: since gravitational lensing is rotationally symmetric, we use an equivariant CNN that has this symmetry baked into its architecture. The network doesn't need to waste capacity learning that a rotated lens is still a lens - it knows that structurally. This turned out to work better (94.93% vs 92.40%) and train faster (42 vs 80 epochs), even without pretrained weights.
 
-The quantum circuit itself uses angle encoding because it's shallow (one gate per feature) and NISQ-friendly. We use all three rotation axes and a mixed entanglement pattern to get the most out of 8 qubits without going too deep. The whole thing trains end-to-end on GPU through TorchQuantum's autograd - no separate quantum optimization loop, no parameter-shift overhead.
+Model C pushes the equivariance principle further: instead of feeding equivariant features into a generic variational quantum circuit, it uses a p4m equivariant QCNN where the quantum gates themselves respect the symmetry group. This is end-to-end equivariance - classical backbone, quantum circuit, and all. The result is the best performance across all metrics (96.93% accuracy, 0.9966 ROC-AUC) with only 33 trainable quantum parameters, showing that encoding the right inductive bias into the quantum circuit matters more than circuit depth or parameter count.
+
+All three models use angle encoding via RY gates and train end-to-end on GPU through TorchQuantum's autograd - no separate quantum optimization loop, no parameter-shift overhead.
 
 ## Future directions
 
@@ -195,10 +257,11 @@ The hybrid quantum-classical approach is interesting for cross-dataset evaluatio
 ## Files
 
 ```
-hqcnn_darkmatter_v10/
+Specific_Test_III_Quantum_ML/
 ├── README.md
-├── torchquantum_v10.ipynb                 # Model A
-└── hybrid_ecnn_qnn_torchquantum.ipynb     # Model B
+├── torchquantum_v10.ipynb                 # Model A: ResNet-18 + Variational QC
+├── hybrid_ecnn_qnn_torchquantum.ipynb     # Model B: E2-ECNN + Variational QC
+└── equiv_qnn.ipynb                        # Model C: E2-ECNN + p4m Equivariant QCNN
 ```
 
 ---
@@ -210,4 +273,5 @@ hqcnn_darkmatter_v10/
 3. Preskill. "Quantum Computing in the NISQ era and beyond." Quantum 2, 79, 2018.
 4. Weiler & Cesa. "General E(2)-Equivariant Steerable CNNs." NeurIPS 2019.
 5. Wang et al. "TorchQuantum." DAC 2022.
-6. ML4SCI DeepLense. https://github.com/ML4SCI/DeepLense
+6. Diaz Lievano et al. "EQNN for HEP." QMLHEP/ML4SCI. https://github.com/ML4SCI/QMLHEP
+7. ML4SCI DeepLense. https://github.com/ML4SCI/DeepLense
