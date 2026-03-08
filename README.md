@@ -20,7 +20,7 @@ This repository contains my solutions for the [Google Summer of Code 2026](https
 |------|------|-------------|------------|-------|
 | **Common Test I** | Multi-Class Classification | ESCNN + ResNet-18 | ROC-AUC | **0.9882** |
 | **Specific Test II** | Lens Finding | ESCNN + ResNet-18 | ROC-AUC | **0.9867** |
-| **Specific Test III** | Quantum ML | ResNet-18 + Quantum Circuit | ROC-AUC | **0.9837** |
+| **Specific Test III** | Quantum ML | E2-CNN + p4m Equivariant QCNN | ROC-AUC | **0.9966** |
 | **Specific Test IV** | Neural Operators | U-Shaped FNO Classifier | ROC-AUC | **0.9977** |
 | **Specific Test V** | Physics-Guided ML | E2-Equivariant PINN (3-stream) | ROC-AUC | **0.9629** |
 | **Specific Test VI.A** | Super-Resolution (Simulated) | EDSR + LIIF | PSNR / SSIM | **41.79 dB / 0.9766** |
@@ -42,8 +42,9 @@ Task/
 │   ├── notebooks/gsoc_specific_test_2_lens.ipynb    #   Binary classification on real survey data
 │   └── README.md
 ├── Specific_Test_III_Quantum_ML/                    # Specific Test III: Quantum ML
-│   ├── torchquantum_v10.ipynb                       #   ResNet-18 + quantum circuit
-│   ├── hybrid_ecnn_qnn_torchquantum.ipynb           #   E2-CNN + quantum circuit
+│   ├── torchquantum_v10.ipynb                       #   ResNet-18 + variational QC
+│   ├── hybrid_ecnn_qnn_torchquantum.ipynb           #   E2-CNN + variational QC
+│   ├── equiv_qnn.ipynb                              #   E2-CNN + p4m Equivariant QCNN (best)
 │   └── README.md
 ├── Specific_Test_IV_Neural_Operators/               # Specific Test IV: Neural Operators
 │   ├── neural_operator_classifier.ipynb             #   FNO + FNO-Enhanced ResNet classifiers
@@ -102,12 +103,13 @@ Binary classification of real observational data -- lensed vs non-lensed galaxie
 
 Hybrid quantum-classical classification using parameterized quantum circuits for the 3-class lensing task.
 
-**Approach:** Classical CNN feature extractor (ResNet-18 / E2-Equivariant CNN) followed by a variational quantum circuit classifier. Images are downsampled and PCA-reduced for quantum circuit compatibility.
+**Approach:** Three hybrid models explored. The best model pairs an E2-equivariant CNN backbone with a p4m equivariant QCNN that preserves symmetry at both the classical and quantum levels. The equivariant QCNN uses only 33 trainable quantum parameters yet outperforms the 144-parameter variational circuit because every parameter respects the problem's symmetry.
 
 | Model | ROC-AUC | Accuracy |
 |-------|---------|----------|
-| ResNet-18 + Quantum Circuit | **0.9837** | 92.40% |
+| ResNet-18 + Quantum Circuit | 0.9837 | 92.40% |
 | E2-CNN + Quantum Circuit | 0.9812 | 94.93% |
+| E2-CNN + p4m Equivariant QCNN | **0.9966** | **96.93%** |
 
 [Full details →](Specific_Test_III_Quantum_ML/README.md)
 
