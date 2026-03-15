@@ -273,5 +273,4 @@ Specific_Test_III_Quantum_ML/
 3. Preskill. "Quantum Computing in the NISQ era and beyond." Quantum 2, 79, 2018.
 4. Weiler & Cesa. "General E(2)-Equivariant Steerable CNNs." NeurIPS 2019.
 5. Wang et al. "TorchQuantum." DAC 2022.
-6. Diaz Lievano et al. "EQNN for HEP." QMLHEP/ML4SCI. https://github.com/ML4SCI/QMLHEP
-7. ML4SCI DeepLense. https://github.com/ML4SCI/DeepLense
+6. ML4SCI DeepLense. https://github.com/ML4SCI/DeepLense
