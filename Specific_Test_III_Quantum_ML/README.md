@@ -94,7 +94,7 @@ Input (1×128×128)
 
 `equiv_qnn.ipynb`
 
-Takes the equivariant idea to its logical conclusion: equivariance at *both* the classical and quantum levels. The classical backbone is the same C4 steerable CNN from Model B, but the quantum circuit is replaced with a p4m equivariant QCNN adapted from the EQNN_for_HEP project (Lazaro Diaz Lievano, QMLHEP/ML4SCI). Instead of a generic variational circuit, this uses equivariant U2 gates (RX + IsingZZ + RX + IsingYY) and equivariant pooling (RX + RY + RZ + CRX) that respect p4m symmetry. The QCNN structure progressively reduces 8 qubits to 1 through three conv-pool stages, mirroring classical CNN downsampling. Only 33 trainable quantum parameters.
+Takes the equivariant idea to its logical conclusion: equivariance at *both* the classical and quantum levels. The classical backbone is the same C4 steerable CNN from Model B, but the quantum circuit is replaced with a p4m equivariant QCNN. Instead of a generic variational circuit, this uses equivariant U2 gates (RX + IsingZZ + RX + IsingYY) and equivariant pooling (RX + RY + RZ + CRX) that respect p4m symmetry. The QCNN structure progressively reduces 8 qubits to 1 through three conv-pool stages, mirroring classical CNN downsampling. Only 33 trainable quantum parameters.
 
 ```
 Input (1×150×150)
@@ -215,6 +215,8 @@ The backbone is swappable by design, so the full project would systematically ex
 The equivariant approach clearly has legs - Model B already shows that encoding rotation symmetry into the backbone improves both accuracy and convergence speed. The reason equivariant networks are a natural fit here is that gravitational lensing physics doesn't care about orientation. A dark matter subhalo distorts light the same way whether the image is rotated 0° or 137°. Standard CNNs have to learn this fact from seeing augmented examples - they burn model capacity on something that's already known from the physics. Equivariant networks encode it as a structural constraint, so every parameter goes toward learning features that actually matter.
 
 Our C4 steerable CNN handles 4 discrete rotations (0°, 90°, 180°, 270°). But there are richer equivariant architectures worth exploring with the quantum head:
+
+- **C8 Steerable CNN + QNN** - the most direct upgrade from C4. C8 handles 8 discrete rotations (every 45°) using the same `e2cnn` library, so it's nearly a drop-in replacement. More rotation samples means the network captures finer angular structure in lensing arcs and subhalo distortions that C4 might miss. The cost is a larger group representation (8 group channels per feature instead of 4), which increases intermediate feature dimensions and compute, but the architecture and training pipeline stay the same. This is the lowest-effort way to test whether finer rotational resolution helps the quantum head.
 
 - **Equivariant Wide ResNet + QNN** - our current equivariant backbone is relatively shallow (6 blocks, no skip connections). An equivariant wide ResNet adds residual connections and wider layers, which helps gradient flow in deeper networks and lets the model learn more complex rotation-invariant features. The richer feature representation going into the quantum circuit could improve classification, especially for the harder sphere class.
 
