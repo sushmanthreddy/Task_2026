@@ -136,7 +136,7 @@ Classification using spectral convolution architectures that operate in function
 
 The U-Shaped FNO Classifier **significantly surpasses the Common Test I baseline** (0.9977 vs 0.9882).
 
-![Specific Test IV - Combined ROC comparison](Specific_Test_IV_Neural_Operators/checkpoints/comparison_roc.png)
+![Specific Test IV - UFNO Classifier ROC (best: AUC 0.9977)](Specific_Test_IV_Neural_Operators/checkpoints/roc_UFNO_Classifier.png)
 
 [Full details →](Specific_Test_IV_Neural_Operators/README.md)
 
