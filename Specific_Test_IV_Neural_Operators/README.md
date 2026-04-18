@@ -190,11 +190,11 @@ Pure U-shaped spectral convolution classifier without any CNN backbone.
 
 **UFNO-Enhanced ResNet:**
 
-![UFNO-Enhanced ResNet ROC](checkpoints/roc_test_UFNO_Enhanced_ResNet.png)
+![UFNO-Enhanced ResNet ROC](checkpoints/roc_UFNO_Enhanced_ResNet.png)
 
 **UFNO Classifier (best):**
 
-![UFNO Classifier ROC](checkpoints/roc_test_UFNO_Classifier.png)
+![UFNO Classifier ROC](checkpoints/roc_UFNO_Classifier.png)
 
 ### Combined ROC Comparison
 
