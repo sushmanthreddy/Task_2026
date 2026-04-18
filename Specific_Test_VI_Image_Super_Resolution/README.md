@@ -102,6 +102,14 @@ Three mechanisms make this work in practice:
 | PSNR | **41.79 dB** |
 | SSIM | **0.9766** |
 
+### Visual Results
+
+![Task VI.A - LIIF Super-Resolution sample 1](task_a/output.png)
+
+![Task VI.A - LIIF Super-Resolution sample 2](task_a/output1.png)
+
+![Task VI.A - LIIF Super-Resolution sample 3](task_a/output2.png)
+
 Converges smoothly. Per-image PSNR across the 1,000 test images ranges from about 39 dB to 43 dB, with SSIM consistently above 0.97. The single model works at any upscaling factor without retraining - that's the whole point of the implicit representation.
 
 For context, here's how this compares against prior super-resolution results reported in the DeepLense project on simulated lensing data (note: datasets differ across projects, so this isn't a strict apples-to-apples comparison, but it gives a sense of where things stand):
@@ -229,6 +237,12 @@ A gravitational lens doesn't care which way is "up." Rotate a lensing image by a
 | MSE | 0.000494 |
 | PSNR | **34.81 dB** |
 | SSIM | **0.8281** |
+
+### Visual Results
+
+![Task VI.B - Equivariant LIIF on HSC/HST sample 1](task_b/output.png)
+
+![Task VI.B - Equivariant LIIF on HSC/HST sample 2](task_b/output1.png)
 
 34.81 dB from 270 real telescope images is a solid result. The equivariant architecture doesn't need to waste capacity learning that rotated inputs should give rotated outputs - that's guaranteed by construction. The combined L1+SSIM loss helps with perceptual quality, and the warm restart scheduler helps the model escape local minima during the long training run.
 

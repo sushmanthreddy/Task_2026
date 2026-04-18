@@ -192,6 +192,12 @@ Three conv-pool stages reduce 8 qubits → 4 → 2 → 1, with a final Hadamard 
 
 **Test accuracy: 96.93% · ROC-AUC: 0.9966 · 50 epochs (early stopping at best), ~149 min**
 
+### Results Visualization
+
+![Quantum ML results - Model C (E2-CNN + p4m Equivariant QCNN)](output.png)
+
+---
+
 Model C is the clear winner across the board. Making the quantum circuit itself equivariant - not just the classical backbone - pushes test accuracy from 94.93% to 96.93% and ROC-AUC from 0.9812 to 0.9966. The p4m QCNN uses only 33 trainable quantum parameters versus 144 in the variational circuit, yet achieves better results because every quantum parameter respects the problem's symmetry. Sphere remains the hardest class, but Model C's sphere precision (0.987) is substantially higher than Models A and B, meaning fewer false sphere predictions. The "no" class hits perfect recall (1.000).
 
 ---

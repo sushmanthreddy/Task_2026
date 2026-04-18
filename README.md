@@ -80,6 +80,8 @@ Classify gravitational lensing images into 3 classes (no substructure / spherica
 | ROC-AUC (macro) | **0.9882** |
 | Accuracy | 93.71% |
 
+![Common Test I - ROC Curve](common_task/checkpoints/roc_curve_best.png)
+
 [Full details →](common_task/README.md)
 
 ---
@@ -94,6 +96,8 @@ Binary classification of real observational data -- lensed vs non-lensed galaxie
 |--------|-------|
 | ROC-AUC | **0.9867** |
 | Accuracy | 92.96% |
+
+![Specific Test II - ROC Curve](Specific_Test_II_Lens_Finding/artifacts/roc_curve.png)
 
 [Full details →](Specific_Test_II_Lens_Finding/README.md)
 
@@ -110,6 +114,8 @@ Hybrid quantum-classical classification using parameterized quantum circuits for
 | ResNet-18 + Quantum Circuit | 0.9837 | 92.40% |
 | E2-CNN + Quantum Circuit | 0.9812 | 94.93% |
 | E2-CNN + p4m Equivariant QCNN | **0.9966** | **96.93%** |
+
+![Specific Test III - Quantum ML results](Specific_Test_III_Quantum_ML/output.png)
 
 [Full details →](Specific_Test_III_Quantum_ML/README.md)
 
@@ -130,6 +136,8 @@ Classification using spectral convolution architectures that operate in function
 
 The U-Shaped FNO Classifier **significantly surpasses the Common Test I baseline** (0.9977 vs 0.9882).
 
+![Specific Test IV - Combined ROC comparison](Specific_Test_IV_Neural_Operators/checkpoints/comparison_roc.png)
+
 [Full details →](Specific_Test_IV_Neural_Operators/README.md)
 
 ---
@@ -144,6 +152,8 @@ Physics-Informed Neural Network (PINN) that embeds the gravitational lensing equ
 |--------|-------|
 | ROC-AUC (macro) | **0.9629** |
 | Accuracy | 92.01% |
+
+![Specific Test V - ROC Curves](Specific_Test_V_Physics_Guided_ML/artifacts/roc_curves.png)
 
 [Full details →](Specific_Test_V_Physics_Guided_ML/README.md)
 
@@ -160,6 +170,8 @@ Arbitrary-scale super-resolution for strong lensing images using implicit neural
 | VI.A (Simulated) | **41.79 dB** | **0.9766** | 0.000068 |
 | VI.B (Real HSC/HST) | **34.81 dB** | **0.8281** | 0.000494 |
 
+![Specific Test VI.A - LIIF Super-Resolution (best: 41.79 dB PSNR / 0.9766 SSIM)](Specific_Test_VI_Image_Super_Resolution/task_a/output.png)
+
 [Full details →](Specific_Test_VI_Image_Super_Resolution/README.md)
 
 ---
@@ -173,6 +185,8 @@ Generative modeling of strong gravitational lensing images using Denoising Diffu
 | Metric | Score |
 |--------|-------|
 | FID | **3.80** |
+
+![Specific Test VIII - Final generated samples](Specific_Test_IV_Diffusion_Models/results/final_samples.png)
 
 [Full details →](Specific_Test_IV_Diffusion_Models/README.md)
 

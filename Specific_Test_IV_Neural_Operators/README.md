@@ -180,13 +180,43 @@ Pure U-shaped spectral convolution classifier without any CNN backbone.
 
 ### ROC Curves
 
+**FNO Classifier:**
+
+![FNO Classifier ROC](checkpoints/roc_FNO_Classifier.png)
+
+**FNO-Enhanced ResNet:**
+
+![FNO-Enhanced ResNet ROC](checkpoints/roc_FNO_Enhanced_ResNet.png)
+
 **UFNO-Enhanced ResNet:**
 
 ![UFNO-Enhanced ResNet ROC](checkpoints/roc_test_UFNO_Enhanced_ResNet.png)
 
-**UFNO Classifier:**
+**UFNO Classifier (best):**
 
 ![UFNO Classifier ROC](checkpoints/roc_test_UFNO_Classifier.png)
+
+### Combined ROC Comparison
+
+![Combined ROC comparison across all four neural operator models](checkpoints/comparison_roc.png)
+
+### Training History
+
+**FNO Classifier:**
+
+![FNO Classifier training history](checkpoints/history_FNO_Classifier.png)
+
+**FNO-Enhanced ResNet:**
+
+![FNO-Enhanced ResNet training history](checkpoints/history_FNO-Enhanced_ResNet.png)
+
+**UFNO-Enhanced ResNet:**
+
+![UFNO-Enhanced ResNet training history](checkpoints/history_UFNO-Enhanced_ResNet-18_Training.png)
+
+**UFNO Classifier (best):**
+
+![UFNO Classifier training history](checkpoints/history_UFNO_Classifier_Training.png)
 
 ---
 
