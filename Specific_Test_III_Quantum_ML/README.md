@@ -158,6 +158,12 @@ Each equivariant convolution layer applies a U2 gate: RX rotations on both qubit
 
 Three conv-pool stages reduce 8 qubits → 4 → 2 → 1, with a final Hadamard on the output qubit. Total: 33 trainable quantum parameters (18 conv + 15 pool), compared to 144 in the variational circuit. Despite having far fewer quantum parameters, the equivariant structure is more parameter-efficient because every parameter respects the problem's symmetry.
 
+**Full p4m Equivariant QCNN circuit (8 qubits, 33 trainable parameters) — this is the actual circuit used in Model C and produces our best result (96.93% test accuracy, 0.9966 ROC-AUC):**
+
+![Model C — p4m Equivariant QCNN circuit (TorchQuantum, 8 qubits)](notebook_outputs/architecture/hybrid_qcnn_pennylane.png)
+
+Reading left to right: RY angle encoding on the 8 input features → Conv1 (8 weight-shared `U2_eq` = RX–RX–IsingZZ–RX–RX–IsingYY gates on adjacent and cross pairs) → Pool1 (8→4 active qubits via 4 weight-shared `Pool_eq` = RX–RX–RY–RZ–CRX blocks) → Conv2 (2 cross-pair `U2_eq` gates) → Pool2 (4→2) → Conv3 (final `U2_eq` on the surviving pair) → Pool3 (2→1) → Hadamard on the output qubit → PauliZ measurement on all 8 wires (the 8 expectation values feed the post-net classifier).
+
 ---
 
 ## Results
