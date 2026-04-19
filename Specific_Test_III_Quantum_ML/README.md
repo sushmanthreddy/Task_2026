@@ -22,6 +22,8 @@ Three-class classification of strong gravitational lensing images - no substruct
 
 We went with TorchQuantum instead of PennyLane because backpropagation through quantum circuits on GPU just works out of the box - it sits on top of PyTorch's autograd, so the whole model trains end-to-end with `loss.backward()` like any other neural network. PennyLane's default simulator doesn't do GPU-accelerated backprop the same way, and the parameter-shift rule it relies on for gradients needs two circuit evaluations per parameter per step, which made training noticeably slower in our experiments. TorchQuantum also batches the entire mini-batch through the quantum circuit in one vectorized call, which matters when you're running 30k images for 80 epochs.
 
+This isn't just our observation - it's a known and documented issue in the PennyLane community. In a [PennyLane forum thread on `lightning.gpu` slowness](https://discuss.pennylane.ai/t/qlm-gradientdescent-very-slow-with-lightning-gpu/3104), users reported that a single optimizer step that ran in seconds on `default.qubit` took **over 30 minutes** on `lightning.qubit`/`lightning.gpu` with the default `parameter-shift` differentiation. The PennyLane team confirmed that `lightning.gpu` is only meant to outperform `default.qubit` at *high qubit counts (>>20)*, and that for hybrid training the user has to manually switch to `diff_method="adjoint"` or `"backprop"` to avoid the parameter-shift bottleneck. We have 8 qubits and want gradient flow through the whole hybrid model on every batch - exactly the regime where TorchQuantum's PyTorch-native autograd is the cleaner fit.
+
 ---
 
 ## The three models
@@ -397,5 +399,6 @@ Specific_Test_III_Quantum_ML/
 4. Weiler & Cesa. "General E(2)-Equivariant Steerable CNNs." NeurIPS 2019.
 5. Wang et al. "TorchQuantum." DAC 2022.
 6. ML4SCI DeepLense. https://github.com/ML4SCI/DeepLense
+6a. PennyLane forum: "Qlm GradientDescent very slow with lightning.gpu" (2023). https://discuss.pennylane.ai/t/qlm-gradientdescent-very-slow-with-lightning-gpu/3104 — *community-confirmed parameter-shift bottleneck cited in our "Why TorchQuantum" section.*
 7. **Chang, S. Y., Grossi, M., Le Saux, B. & Vallecorsa, S.** "Approximately Equivariant Quantum Neural Network for *p4m* Group Symmetries in Images." arXiv:2310.02323, 2023. — *p4m equivariant U2 + pooling gates used in Model C.* https://arxiv.org/abs/2310.02323
 8. **Chirkov, D. & Lobanov, I.** "Pixel-Translation-Equivariant Quantum Convolutional Neural Networks via Fourier Multiplexers." arXiv:2604.06094, 2026. — *Fourier-multiplexer ansatz tested in Model D.* https://arxiv.org/abs/2604.06094
