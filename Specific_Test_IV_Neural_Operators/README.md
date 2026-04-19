@@ -220,6 +220,28 @@ Pure U-shaped spectral convolution classifier without any CNN backbone.
 
 ---
 
+## Notebook Output Gallery
+
+### FNO Classifier and FNO-Enhanced ResNet (`neural_operator_classifier.ipynb`)
+
+| FNO Training | FNO-Enhanced ResNet Training | FNO Classifier ROC | FNO-Enhanced ResNet ROC |
+|---|---|---|---|
+| ![](notebook_outputs/fno_classifier_and_enhanced_resnet/01_fno_training_history.png) | ![](notebook_outputs/fno_classifier_and_enhanced_resnet/03_fno_enhanced_resnet_training_history.png) | ![](notebook_outputs/fno_classifier_and_enhanced_resnet/05_fno_classifier_roc.png) | ![](notebook_outputs/fno_classifier_and_enhanced_resnet/06_fno_enhanced_resnet_roc.png) |
+
+### U-Shaped FNO-Enhanced ResNet (`u-shaped-fno_enhanced_resnet.ipynb`)
+
+| Training History | Loss Curve | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/ufno_enhanced_resnet/01_training_history.png) | ![](notebook_outputs/ufno_enhanced_resnet/02_loss_curve.png) | ![](notebook_outputs/ufno_enhanced_resnet/03_roc_curve.png) |
+
+### U-Shaped FNO Classifier (`u-shaped_fno_classifier.ipynb`) -- best, AUC 0.9977
+
+| Training History | Loss Curve | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/ufno_classifier/01_training_history.png) | ![](notebook_outputs/ufno_classifier/02_loss_curve.png) | ![](notebook_outputs/ufno_classifier/03_roc_curve_best.png) |
+
+---
+
 ## Comparison with Common Test I
 
 | Aspect | Common Test I | This Work (Best: UFNO Classifier) |

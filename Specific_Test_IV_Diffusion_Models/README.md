@@ -384,6 +384,16 @@ After training, the model generates samples automatically at each checkpoint. Th
 
 ---
 
+## Notebook Output Gallery
+
+Additional plots produced by `image_resolution.ipynb`:
+
+| Dataset Samples | Generated Samples |
+|---|---|
+| ![](notebook_outputs/01_dataset_samples.png) | ![](notebook_outputs/02_generated_samples.png) |
+
+---
+
 ## File Structure
 
 ```

@@ -269,6 +269,20 @@ L_total = L_CE + λ_prior × L_prior + λ_opt × L_opt
 
 ---
 
+## Notebook Output Gallery
+
+Additional plots produced by `gsoc_common_task.ipynb`:
+
+| Dataset Samples | Confusion Matrix | Per-Class Metrics |
+|---|---|---|
+| ![](notebook_outputs/01_dataset_samples.png) | ![](notebook_outputs/04_confusion_matrix.png) | ![](notebook_outputs/09_per_class_metrics.png) |
+
+| Canonicalized Samples | Predictions Grid | Accuracy Plot |
+|---|---|---|
+| ![](notebook_outputs/06_canonicalized_samples.png) | ![](notebook_outputs/07_predictions_grid_a.png) | ![](notebook_outputs/05_accuracy_plot.png) |
+
+---
+
 ## Comparison with Existing DeepLense Implementations
 
 | Implementation | Architecture | Best AUC | Key Features |

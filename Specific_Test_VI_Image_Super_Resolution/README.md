@@ -352,3 +352,20 @@ The equivariant LIIF architecture is particularly well-suited for deployment acr
 4. Weiler, M. & Cesa, G. (2019). General E(2)-Equivariant Steerable CNNs. NeurIPS 2019.
 5. Lim, B., et al. (2017). Enhanced Deep Residual Networks for Single Image Super-Resolution. CVPR Workshops 2017.
 6. Alexander, S., et al. (2020). Deep Learning the Morphology of Dark Matter Substructure. The Astrophysical Journal.
+
+---
+
+## Notebook Output Gallery
+
+### Task VI.A (`LIIF_Lensing_Training_2.ipynb`)
+
+| Dataset Samples | Training History | PSNR Distribution | SR Samples |
+|---|---|---|---|
+| ![](task_a/notebook_outputs/01_dataset_samples.png) | ![](task_a/notebook_outputs/02_training_history.png) | ![](task_a/notebook_outputs/03_psnr_distribution.png) | ![](task_a/notebook_outputs/04_super_resolution_samples.png) |
+
+### Task VI.B (`LIIF_EQ_Lensing_TaskB_v4.ipynb`)
+
+| Training History | SR Samples |
+|---|---|
+| ![](task_b/notebook_outputs/01_training_history.png) | ![](task_b/notebook_outputs/02_super_resolution_samples.png) |
+

@@ -262,6 +262,28 @@ The hybrid quantum-classical approach is interesting for cross-dataset evaluatio
 
 ---
 
+## Notebook Output Gallery
+
+### Model A - ResNet-18 + Quantum Circuit (`torchquantum_v10.ipynb`)
+
+| Training History | Confusion Matrix | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/resnet18_qnn/02_training_history.png) | ![](notebook_outputs/resnet18_qnn/03_confusion_matrix.png) | ![](notebook_outputs/resnet18_qnn/04_roc_curve.png) |
+
+### Model B - E2-Equivariant CNN + Quantum Circuit (`hybrid_ecnn_qnn_torchquantum.ipynb`)
+
+| Training History | Confusion Matrix | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/e2cnn_qnn/01_training_history.png) | ![](notebook_outputs/e2cnn_qnn/02_confusion_matrix.png) | ![](notebook_outputs/e2cnn_qnn/03_roc_curve.png) |
+
+### Model C - E2-Equivariant CNN + p4m Equivariant QCNN (`equiv_qnn.ipynb`) -- best
+
+| Training History | Confusion Matrix | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/e2cnn_p4m_qcnn/01_training_history.png) | ![](notebook_outputs/e2cnn_p4m_qcnn/02_confusion_matrix.png) | ![](notebook_outputs/e2cnn_p4m_qcnn/03_roc_curve.png) |
+
+---
+
 ## Files
 
 ```

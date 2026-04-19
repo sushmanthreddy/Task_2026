@@ -495,6 +495,20 @@ Update the `train_dir` and `val_dir` paths in the `__main__` block to point to y
 
 ---
 
+## Notebook Output Gallery
+
+Additional plots produced by `pinn.ipynb`:
+
+| Dataset Samples | Training History | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/01_dataset_samples.png) | ![](notebook_outputs/02_training_history.png) | ![](notebook_outputs/03_roc_curve.png) |
+
+| Confusion Matrix | Reconstruction Quality |
+|---|---|
+| ![](notebook_outputs/04_confusion_matrix.png) | ![](notebook_outputs/05_reconstruction_quality.png) |
+
+---
+
 ## File Structure
 
 ```

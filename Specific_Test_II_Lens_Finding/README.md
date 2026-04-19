@@ -264,6 +264,16 @@ The equivariant canonicalization approach is particularly well-suited for cross-
 
 ---
 
+## Notebook Output Gallery
+
+Additional plots produced by `gsoc_specific_test_2_lens.ipynb`:
+
+| Dataset Samples | ROC Curve | Confusion Matrix |
+|---|---|---|
+| ![](notebook_outputs/01_dataset_samples.png) | ![](notebook_outputs/03_roc_curve_best.png) | ![](notebook_outputs/04_confusion_matrix.png) |
+
+---
+
 ## References
 
 1. Weiler, M., & Cesa, G. "General E(2)-Equivariant Steerable CNNs." NeurIPS 2019.
