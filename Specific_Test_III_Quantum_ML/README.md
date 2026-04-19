@@ -284,6 +284,93 @@ The hybrid quantum-classical approach is interesting for cross-dataset evaluatio
 
 ---
 
+## Model D - E2-Equivariant CNN + p4m QCNN + Fourier-Multiplexer Enhancement (research extension)
+
+`equiv_qnn.ipynb` (with `use_fourier_enhancement=True`)
+
+### Idea
+
+Model C already enforces two symmetries: **C4 rotation equivariance** in the classical backbone (via `e2cnn`) and **p4m equivariance** in the quantum circuit (via the Chang et al. 2023 equivariant U2 gates). A natural question: can we add a *third* layer of symmetry by inserting the **pixel-cyclic-shift (PCS) equivariant Fourier-multiplexer** ansatz from Chirkov & Lobanov (arXiv:2604.06094, 2026) on top?
+
+Their key result is that any unitary commuting with the cyclic shift on n qubits is diagonal in the QFT basis. So a PCS-equivariant layer factors as
+
+```
+QFT  ->  diag(exp(i·φ_k))  ->  IQFT
+```
+
+with `2^n` trainable phase parameters. Inter-layer QFTs cancel, so stacking L layers reduces to one QFT, L diagonal phase masks, and one inverse QFT. We prepend this block to Model C right after the RY angle encoding and before Conv1, with **L = 3** diagonal phase layers (3 × 2^8 = **768 extra trainable phases**).
+
+### Architecture
+
+End-to-end pipeline (note the orange Fourier-multiplexer block inserted between RY encoding and Conv1):
+
+![End-to-end architecture](notebook_outputs/architecture/architecture_blocks.png)
+
+Three quantum-circuit panels showing the actual gates that get executed:
+
+**Panel 1 — RY encoding + Fourier-multiplexer enhancement (PCS-equivariant block)**
+![Panel 1: encoding + Fourier multiplexer](notebook_outputs/architecture/panel1_encoding_fourier.png)
+
+**Panel 2 — p4m equivariant Conv layers (RX–IsingZZ–RX–IsingYY pattern, weight-shared)**
+![Panel 2: equivariant conv layers](notebook_outputs/architecture/panel2_conv_layers.png)
+
+**Panel 3 — p4m equivariant Pool layers + Z-basis measurement on all 8 wires**
+![Panel 3: equivariant pool layers + measurement](notebook_outputs/architecture/panel3_pool_layers.png)
+
+### Results
+
+| Class | Precision | Recall | F1 | AUC |
+|-------|-----------|--------|-----|-----|
+| no | 0.945 | 0.988 | 0.966 | 0.996 |
+| sphere | 0.968 | 0.937 | 0.952 | 0.994 |
+| vort | 0.988 | 0.976 | 0.982 | 0.999 |
+
+**Test accuracy: 96.67% · ROC-AUC: 0.9962 · F1 (macro): 0.9666 · 50 epochs, ~150 min**
+**Trainable quantum parameters: 801** (33 conv/pool from Model C + 768 Fourier phases)
+
+| Training History | Confusion Matrix | ROC Curve |
+|---|---|---|
+| ![](notebook_outputs/e2cnn_p4m_qcnn_fourier/01_training_history.png) | ![](notebook_outputs/e2cnn_p4m_qcnn_fourier/02_confusion_matrix.png) | ![](notebook_outputs/e2cnn_p4m_qcnn_fourier/03_roc_curve.png) |
+
+### Honest comparison vs Model C (baseline)
+
+| Metric | Model C (33 q-params) | Model D (801 q-params) | Δ |
+|---|---|---|---|
+| Test Accuracy | **96.93%** | 96.67% | −0.26% |
+| Test ROC-AUC | **0.9966** | 0.9962 | −0.0004 |
+| Test F1 (macro) | **0.9692** | 0.9666 | −0.0026 |
+| Best Val Accuracy | 97.24% | **97.63%** | +0.39% |
+| Per-class `no` | **100.00%** | 98.77% | −1.23% |
+| Per-class `sphere` | 92.91% | **93.70%** | +0.79% |
+| Per-class `vort` | **98.02%** | 97.63% | −0.39% |
+
+**The Fourier-multiplexer enhancement does not improve over Model C.** With **24× more trainable quantum parameters** it lands within run-to-run noise of the baseline (test accuracy −0.26%, ROC-AUC −0.0004). The val/test gap also widens slightly (0.31% → 0.96%), the fingerprint of mild overfitting from the extra capacity.
+
+### Why it doesn't help (and what it would take to make it help)
+
+The PCS-equivariance the Fourier-multiplexer is designed to exploit assumes that **qubit indices correspond to spatial positions in the input image**. In our pipeline the classical bridge layer maps `61,504 E2CNN features → 8 angles`, so by the time the data reaches the quantum circuit there is no pixel-to-qubit correspondence anymore. Cyclically shifting qubit indices is not a meaningful symmetry of our intermediate representation, so the inductive bias the paper proves theoretical guarantees for has no physical interpretation here. The 768 extra phases become unconstrained capacity that the model uses to fit validation noise.
+
+To make this enhancement physically meaningful, one would need to **replace the bridge layer with FRQI image encoding** (per Chirkov & Lobanov 2026), preserving the pixel layout into the qubit register. That requires moving from 8 to 14+ qubits and is left as future work.
+
+### Why we report it anyway
+
+Reporting a clean negative result is more useful than hiding the experiment:
+
+- It shows that recent quantum architectural advances do **not** transfer trivially into feature-based hybrid pipelines.
+- It quantifies the cost of an architectural prior whose physical assumptions are broken by the surrounding pipeline.
+- It strengthens the conclusion that **Model C — equivariance matched to the actual data flow — is the right design point** for this task, not just the highest-scoring one by accident.
+
+### Updated summary table
+
+| Model | Quantum params | Test Acc | ROC-AUC | F1 (macro) |
+|-------|----------------|----------|---------|------------|
+| A: ResNet-18 + Variational QC | 144 | 92.40% | 0.9837 | – |
+| B: E2-CNN + Variational QC | 144 | 94.93% | 0.9812 | – |
+| **C: E2-CNN + p4m Equivariant QCNN** | **33** | **96.93%** | **0.9966** | **0.9692** |
+| D: C + Fourier-multiplexer (+768 phases) | 801 | 96.67% | 0.9962 | 0.9666 |
+
+---
+
 ## Files
 
 ```
@@ -304,3 +391,5 @@ Specific_Test_III_Quantum_ML/
 4. Weiler & Cesa. "General E(2)-Equivariant Steerable CNNs." NeurIPS 2019.
 5. Wang et al. "TorchQuantum." DAC 2022.
 6. ML4SCI DeepLense. https://github.com/ML4SCI/DeepLense
+7. **Chang, S. Y., Grossi, M., Le Saux, B. & Vallecorsa, S.** "Approximately Equivariant Quantum Neural Network for *p4m* Group Symmetries in Images." arXiv:2310.02323, 2023. — *p4m equivariant U2 + pooling gates used in Model C.* https://arxiv.org/abs/2310.02323
+8. **Chirkov, D. & Lobanov, I.** "Pixel-Translation-Equivariant Quantum Convolutional Neural Networks via Fourier Multiplexers." arXiv:2604.06094, 2026. — *Fourier-multiplexer ansatz tested in Model D.* https://arxiv.org/abs/2604.06094
